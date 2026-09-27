@@ -1,0 +1,230 @@
+local Camera = workspace.CurrentCamera
+local ESPObjects = {}
+local HighlightedParts = {}
+
+local ESP = {
+    Enabled = true,
+    MaxDistance = 1000,
+    ShowName = true,
+    ShowDistance = true,
+    HighlightEnabled = true,
+    HighlightColor = Color3.fromRGB(255, 0, 0),
+    HighlightTransparency = 0.3
+}
+
+local function IsAnimatronic(obj)
+    if not obj or not obj:IsA("Model") then return false end
+    local name = obj.Name
+    local animatronicNames = {
+        "Bonnie", "Freddy", "Chica", "Foxy", "GoldenFreddy",
+        "ToyBonnie", "ToyFreddy", "ToyChica", "Mangle", "BB", "JJ",
+        "Puppet", "WitheredBonnie", "WitheredFreddy", "WitheredChica", "WitheredFoxy",
+        "Endo01", "Endo02", "ShadowFreddy", "RWQFSFASXC", "PaperPal",
+        "Springtrap", "SpringBonnie", "Fredbear", "Nightmare", "NightmareFreddy",
+        "NightmareBonnie", "NightmareChica", "NightmareFoxy", "Nightmarionne",
+        "Plushtrap", "NightmareBB", "NightmareMangle", "JackOChica", "JackOBonnie",
+        "CircusBaby", "Ballora", "FuntimeFreddy", "FuntimeFoxy", "BonBon", "Bonnet",
+        "Ennard", "Bidybab", "Electrobab", "Minireena", "Lolbit",
+        "ScrapBaby", "ScrapTrap", "MoltenFreddy", "Lefty", "MusicMan",
+        "Helpy", "RockstarFreddy", "RockstarBonnie", "RockstarChica", "RockstarFoxy",
+        "Orville", "MrHippo", "HappyFrog", "NeddBear", "PigPatch",
+        "GlamrockFreddy", "GlamrockChica", "RoxanneWolf", "MontgomeryGator", "Vanny",
+        "Sun", "Moon", "Daycare", "DJMusicMan", "MapBot", "GlamrockBonnie",
+        "WetFloorBot", "StaffBot", "SecurityBot", "WindUpMusicMan",
+        "MXES", "Mimic", "Tangle", "Blob",
+        "IgnitedBonnie", "IgnitedFreddy", "IgnitedChica", "IgnitedFoxy", "IgnitedGoldenFreddy",
+        "Creation", "Lockjaw", "Sugar", "Popgoes", "Candy", "Cindy", "Chester", "Blank",
+        "Penguin", "Chipper", "Animdude", "Freddles", "Cupcake",
+        "NightmareCupcake", "GrimmFoxy", "Dreadbear", "DarkFreddy", "DarkBonnie", "DarkChica", "DarkFoxy"
+    }
+    for _, animName in ipairs(animatronicNames) do
+        if name == animName then return true end
+    end
+    if name:find("Animatronic") or name:find("Bot") or name:find("Endo") or name:find("Nightmare") or name:find("Phantom") or name:find("Shadow") then
+        return true
+    end
+    return false
+end
+
+local function GetHeadPart(model)
+    return model:FindFirstChild("Head") 
+        or model:FindFirstChild("MeshHead") 
+        or model:FindFirstChild("HeadMesh")
+        or model.PrimaryPart
+        or model:FindFirstChildOfClass("BasePart")
+end
+
+local function HighlightModel(model)
+    if HighlightedParts[model] then return end
+    local parts = {}
+    for _, part in ipairs(model:GetDescendants()) do
+        if part:IsA("BasePart") or part:IsA("MeshPart") then
+            local highlight = Instance.new("Highlight")
+            highlight.Name = "ESP_Highlight"
+            highlight.FillColor = ESP.HighlightColor
+            highlight.FillTransparency = ESP.HighlightTransparency
+            highlight.OutlineColor = ESP.HighlightColor
+            highlight.OutlineTransparency = 0
+            highlight.Parent = part
+            table.insert(parts, highlight)
+        end
+    end
+    HighlightedParts[model] = parts
+end
+
+local function UnhighlightModel(model)
+    if HighlightedParts[model] then
+        for _, highlight in ipairs(HighlightedParts[model]) do
+            if highlight and highlight.Parent then highlight:Destroy() end
+        end
+        HighlightedParts[model] = nil
+    end
+end
+
+local function CreateESP(model)
+    if ESPObjects[model] then return end
+    local head = GetHeadPart(model)
+    if not head then return end
+    
+    local billboard = Instance.new("BillboardGui")
+    billboard.Name = "ESP_FNAF2"
+    billboard.Adornee = head
+    billboard.AlwaysOnTop = true
+    billboard.Size = UDim2.new(0, 250, 0, 50)
+    billboard.StudsOffset = Vector3.new(0, 5, 0)
+    billboard.MaxDistance = ESP.MaxDistance
+    billboard.Parent = head
+    
+    local nameLabel = Instance.new("TextLabel")
+    nameLabel.Size = UDim2.new(1, 0, 0, 24)
+    nameLabel.Position = UDim2.new(0, 0, 0, 0)
+    nameLabel.BackgroundTransparency = 1
+    nameLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
+    nameLabel.TextStrokeTransparency = 0
+    nameLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+    nameLabel.Font = Enum.Font.GothamBold
+    nameLabel.TextSize = 18
+    nameLabel.Text = model.Name
+    nameLabel.Parent = billboard
+    
+    local distLabel = Instance.new("TextLabel")
+    distLabel.Size = UDim2.new(1, 0, 0, 20)
+    distLabel.Position = UDim2.new(0, 0, 0, 26)
+    distLabel.BackgroundTransparency = 1
+    distLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
+    distLabel.TextStrokeTransparency = 0
+    distLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+    distLabel.Font = Enum.Font.GothamBold
+    distLabel.TextSize = 15
+    distLabel.Text = "..."
+    distLabel.Parent = billboard
+    
+    ESPObjects[model] = {
+        Billboard = billboard,
+        Name = nameLabel,
+        Distance = distLabel
+    }
+    
+    if ESP.HighlightEnabled then HighlightModel(model) end
+end
+
+local function RemoveESP(model)
+    if ESPObjects[model] then
+        ESPObjects[model].Billboard:Destroy()
+        ESPObjects[model] = nil
+    end
+    UnhighlightModel(model)
+end
+
+local function UpdateESP()
+    if not Camera then Camera = workspace.CurrentCamera end
+    if not Camera then return end
+    
+    for model, obj in pairs(ESPObjects) do
+        if not model or not model.Parent then
+            obj.Billboard.Enabled = false
+            continue
+        end
+        
+        if not ESP.Enabled then
+            obj.Billboard.Enabled = false
+            if HighlightedParts[model] then
+                for _, h in ipairs(HighlightedParts[model]) do
+                    if h and h.Parent then h.Enabled = false end
+                end
+            end
+            continue
+        end
+        
+        local head = GetHeadPart(model)
+        if not head then
+            obj.Billboard.Enabled = false
+            continue
+        end
+        
+        local dist = (head.Position - Camera.CFrame.Position).Magnitude
+        
+        if dist > ESP.MaxDistance then
+            obj.Billboard.Enabled = false
+            if HighlightedParts[model] then
+                for _, h in ipairs(HighlightedParts[model]) do
+                    if h and h.Parent then h.Enabled = false end
+                end
+            end
+            continue
+        end
+        
+        obj.Billboard.Enabled = true
+        obj.Billboard.Adornee = head
+        
+        if ESP.ShowName then
+            obj.Name.Visible = true
+            obj.Name.Text = model.Name
+        else
+            obj.Name.Visible = false
+        end
+        
+        if ESP.ShowDistance then
+            obj.Distance.Visible = true
+            obj.Distance.Text = string.format("%.0f m", dist)
+        else
+            obj.Distance.Visible = false
+        end
+        
+        if HighlightedParts[model] then
+            for _, h in ipairs(HighlightedParts[model]) do
+                if h and h.Parent then
+                    h.Enabled = ESP.HighlightEnabled
+                    h.FillColor = ESP.HighlightColor
+                    h.FillTransparency = ESP.HighlightTransparency
+                end
+            end
+        end
+    end
+end
+
+local function ScanWorkspace()
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if IsAnimatronic(obj) and not ESPObjects[obj] then
+            CreateESP(obj)
+        end
+    end
+end
+
+workspace.DescendantAdded:Connect(function(descendant)
+    if IsAnimatronic(descendant) then
+        task.wait(0.3)
+        if descendant and descendant.Parent then CreateESP(descendant) end
+    end
+end)
+
+workspace.DescendantRemoving:Connect(function(descendant)
+    if IsAnimatronic(descendant) then RemoveESP(descendant) end
+end)
+
+ScanWorkspace()
+
+local RunService = game:GetService("RunService")
+RunService.RenderStepped:Connect(function()
+    pcall(UpdateESP)
+end)
